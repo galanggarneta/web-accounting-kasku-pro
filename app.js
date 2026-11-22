@@ -1,7 +1,7 @@
 /**
  * KasKu Pro — Aplikasi Pencatat Keuangan Mobile & Desktop
  * Fitur: PIN Lock, Dark/Light Mode, Auto-OCR Struk, Kategori Custom,
- * Dokumentasi Visual, dan Sinkronisasi Google Sheets + Google Drive per Bulan.
+ * Kamera & Galeri, Warning Hapus 2x, dan Sinkronisasi Google Sheets + Drive.
  */
 
 const STORAGE_KEYS = {
@@ -103,8 +103,10 @@ function loadLocalState() {
     persistTransactions();
   }
 
-  document.getElementById('monthPicker').value = state.activeMonth;
-  document.getElementById('appsScriptUrlInput').value = state.scriptUrl;
+  const monthPicker = document.getElementById('monthPicker');
+  if (monthPicker) monthPicker.value = state.activeMonth;
+  const urlInput = document.getElementById('appsScriptUrlInput');
+  if (urlInput) urlInput.value = state.scriptUrl;
   updateSyncBadge();
 }
 
@@ -125,14 +127,20 @@ function initPinLock() {
     btn.addEventListener('click', () => handlePinDigit(btn.dataset.num));
   });
 
-  document.getElementById('pinBackspace').addEventListener('click', () => {
-    state.pinBuffer = state.pinBuffer.slice(0, -1);
-    renderPinDots();
-  });
+  const backspaceBtn = document.getElementById('pinBackspace');
+  if (backspaceBtn) {
+    backspaceBtn.addEventListener('click', () => {
+      state.pinBuffer = state.pinBuffer.slice(0, -1);
+      renderPinDots();
+    });
+  }
 
-  document.getElementById('pinResetHint').addEventListener('click', () => {
-    document.getElementById('pinMessage').textContent = 'PIN default: 123456. Ubah di menu Pengaturan setelah masuk.';
-  });
+  const resetHintBtn = document.getElementById('pinResetHint');
+  if (resetHintBtn) {
+    resetHintBtn.addEventListener('click', () => {
+      document.getElementById('pinMessage').textContent = 'PIN default: 123456. Ubah di menu Pengaturan setelah masuk.';
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     if (state.unlocked) return;
@@ -246,16 +254,18 @@ function bindEvents() {
 
   document.getElementById('saveNewCategoryBtn').addEventListener('click', addCustomCategory);
 
+  // Upload Foto (Kamera & Galeri)
   const cameraInput = document.getElementById('cameraInput');
   const galleryInput = document.getElementById('galleryInput');
+  const openCameraBtn = document.getElementById('openCameraBtn');
+  const openGalleryBtn = document.getElementById('openGalleryBtn');
 
-  document.getElementById('openCameraBtn').addEventListener('click', () => {
-    cameraInput.click();
-  });
-
-  document.getElementById('openGalleryBtn').addEventListener('click', () => {
-    galleryInput.click();
-  });
+  if (openCameraBtn && cameraInput) {
+    openCameraBtn.addEventListener('click', () => cameraInput.click());
+  }
+  if (openGalleryBtn && galleryInput) {
+    openGalleryBtn.addEventListener('click', () => galleryInput.click());
+  }
 
   const onFilePicked = async (e) => {
     const file = e.target.files[0];
@@ -263,8 +273,8 @@ function bindEvents() {
     await handleImageSelected(file);
   };
 
-  cameraInput.addEventListener('change', onFilePicked);
-  galleryInput.addEventListener('change', onFilePicked);
+  if (cameraInput) cameraInput.addEventListener('change', onFilePicked);
+  if (galleryInput) galleryInput.addEventListener('change', onFilePicked);
 
   document.getElementById('rescanBtn').addEventListener('click', async () => {
     if (state.currentPhotoBase64) {
@@ -341,6 +351,7 @@ function setTxType(type) {
   const tabExp = document.getElementById('tabExpense');
   const tabInc = document.getElementById('tabIncome');
   const submitBtn = document.getElementById('submitBtn');
+  const uploadTitle = document.getElementById('uploadTitle');
 
   if (type === 'Pengeluaran') {
     tabExp.className = 'type-tab active-expense';
@@ -348,6 +359,7 @@ function setTxType(type) {
     submitBtn.className = 'btn-submit expense-submit';
     document.getElementById('submitBtnText').textContent = 'Simpan Pengeluaran';
     document.getElementById('photoSectionLabel').textContent = 'Foto Struk (Auto-Scan) / Dokumentasi Belanja';
+    if (uploadTitle) uploadTitle.textContent = 'Foto Struk atau Makanan/Barang';
     document.getElementById('uploadSub').textContent = 'Otomatis baca nominal & kategori dari struk, tersimpan ke Drive';
     document.getElementById('ocrBadge').classList.remove('hidden');
     document.getElementById('categoryLabel').textContent = 'Kategori Pengeluaran (Bisa Adjust Sendiri)';
@@ -359,6 +371,7 @@ function setTxType(type) {
     submitBtn.className = 'btn-submit income-submit';
     document.getElementById('submitBtnText').textContent = 'Simpan Pemasukan';
     document.getElementById('photoSectionLabel').textContent = 'Dokumentasi Pemasukan (Bukti Transfer / Nota)';
+    if (uploadTitle) uploadTitle.textContent = 'Unggah Bukti Transfer / Sumber Dana';
     document.getElementById('uploadSub').textContent = 'Foto dokumentasi otomatis masuk ke folder Google Drive';
     document.getElementById('ocrBadge').classList.add('hidden');
     document.getElementById('categoryLabel').textContent = 'Kategori Uang Masuk (Bisa Adjust Sendiri)';
@@ -704,6 +717,7 @@ async function fetchMonthFromGoogleSheet(monthStr) {
     updateSyncBadge(false);
   }
 }
+
 async function deleteTransactionFromGoogleSheet(id, month) {
   try {
     const res = await fetch(state.scriptUrl, {
@@ -861,7 +875,7 @@ function renderTransactions() {
           ${isIncome ? '+' : '-'}${formatRupiah(tx.amount)}
         </div>
         <div class="tx-actions">
-          <button type="button" class="tx-mini-btn" data-del="${tx.id}" title="Hapus dari tampilan lokal">
+          <button type="button" class="tx-mini-btn" data-del="${tx.id}" title="Hapus transaksi">
             <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Hapus
           </button>
         </div>
@@ -874,7 +888,8 @@ function renderTransactions() {
   container.querySelectorAll('.tx-thumb').forEach(img => {
     img.addEventListener('click', () => openLightbox(img.dataset.txid));
   });
-container.querySelectorAll('[data-del]').forEach(btn => {
+
+  container.querySelectorAll('[data-del]').forEach(btn => {
     btn.addEventListener('click', async () => {
       // Warning ke-1 (di halaman): tombol berubah menjadi "Yakin Hapus?" selama 3 detik
       if (btn.dataset.confirming !== 'true') {
@@ -905,7 +920,6 @@ container.querySelectorAll('[data-del]').forEach(btn => {
       );
       if (!yakinHapus) return;
 
-      // Eksekusi hapus di aplikasi & Google Sheets
       state.transactions = state.transactions.filter(t => t.id !== id);
       persistTransactions();
       renderAll();
@@ -916,6 +930,9 @@ container.querySelectorAll('[data-del]').forEach(btn => {
       }
     });
   });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
 
 // ==================== SETTINGS, LIGHTBOX & EXPORT ====================
 function openSettingsModal() {
