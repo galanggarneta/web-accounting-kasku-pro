@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>KasKu Pro — Pencatat Keuangan & Struk Otomatis</title>
+  <link rel="icon" type="image/svg+xml" href="logo-kasku.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-kasku-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-kasku-512.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ==================== PIN LOCK SCREEN ==================== -->
+  <div id="pinOverlay" class="pin-overlay">
+    <div class="pin-card" id="pinCard">
+      <div class="pin-logo">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <h1 id="pinTitle">Masukkan PIN Keamanan</h1>
+      <p id="pinSubtitle">Lindungi catatan keuangan & dokumentasi Anda</p>
+
+      <div class="pin-dots" id="pinDots">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div id="pinMessage" class="pin-message"></div>
+
+      <div class="pin-keypad">
+        <button type="button" class="pin-key" data-num="1">1</button>
+        <button type="button" class="pin-key" data-num="2">2</button>
+        <button type="button" class="pin-key" data-num="3">3</button>
+        <button type="button" class="pin-key" data-num="4">4</button>
+        <button type="button" class="pin-key" data-num="5">5</button>
+        <button type="button" class="pin-key" data-num="6">6</button>
+        <button type="button" class="pin-key" data-num="7">7</button>
+        <button type="button" class="pin-key" data-num="8">8</button>
+        <button type="button" class="pin-key" data-num="9">9</button>
+        <button type="button" class="pin-key pin-key-alt" id="pinResetHint" title="Info PIN Default">
+          <i data-lucide="help-circle"></i>
+        </button>
+        <button type="button" class="pin-key" data-num="0">0</button>
+        <button type="button" class="pin-key pin-key-alt" id="pinBackspace" title="Hapus">
+          <i data-lucide="delete"></i>
+        </button>
+      </div>
+      <p class="pin-hint-footer">PIN Default awal: <strong>123456</strong> (dapat diubah di Pengaturan)</p>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP SHELL ==================== -->
+  <div id="appShell" class="app-shell hidden">
+    <!-- Top Header -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-icon">
+            <i data-lucide="wallet"></i>
+          </div>
+          <div>
+            <span class="brand-name">KasKu<span class="brand-accent">Pro</span></span>
+            <span class="brand-tag" id="syncStatusBadge">
+              <span class="status-dot"></span> Mode Lokal
+            </span>
+          </div>
+        </div>
+
+        <!-- Month Switcher (Auto-creates new sheet per month) -->
+        <div class="month-switcher" title="Setiap bulan otomatis membuka tab Sheet baru">
+          <button type="button" class="icon-btn-sm" id="prevMonthBtn" aria-label="Bulan Sebelumnya">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          <div class="month-display">
+            <i data-lucide="calendar"></i>
+            <input type="month" id="monthPicker" aria-label="Pilih Bulan Sheet" />
+          </div>
+          <button type="button" class="icon-btn-sm" id="nextMonthBtn" aria-label="Bulan Berikutnya">
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="header-actions">
+          <button type="button" class="icon-btn" id="themeToggleBtn" title="Ganti Tema Gelap / Terang">
+            <i data-lucide="sun" id="themeIcon"></i>
+          </button>
+          <button type="button" class="icon-btn" id="settingsBtn" title="Pengaturan Sheets, Drive & PIN">
+            <i data-lucide="settings"></i>
+          </button>
+          <button type="button" class="icon-btn" id="lockAppBtn" title="Kunci Aplikasi (PIN)">
+            <i data-lucide="lock"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+      <!-- Real-Time Summary Cards -->
+      <section class="summary-grid" aria-label="Ringkasan Saldo Bulan Ini">
+        <div class="summary-card card-balance">
+          <div class="summary-header">
+            <span class="summary-label">Sisa Saldo (<span class="active-sheet-name">2026-11</span>)</span>
+            <span class="live-pill">LIVE UPDATE</span>
+          </div>
+          <div class="summary-amount" id="balanceAmount">Rp 0</div>
+          <div class="summary-foot">
+            <i data-lucide="zap"></i> Langsung terhitung setiap selesai transaksi
+          </div>
+        </div>
+
+        <div class="summary-card card-income">
+          <div class="summary-header">
+            <span class="summary-label">Total Pemasukan</span>
+            <div class="summary-icon income-bg"><i data-lucide="arrow-down-left"></i></div>
+          </div>
+          <div class="summary-amount text-income" id="totalIncomeAmount">Rp 0</div>
+          <div class="summary-foot" id="incomeCountLabel">0 transaksi masuk</div>
+        </div>
+
+        <div class="summary-card card-expense">
+          <div class="summary-header">
+            <span class="summary-label">Total Pengeluaran</span>
+            <div class="summary-icon expense-bg"><i data-lucide="arrow-up-right"></i></div>
+          </div>
+          <div class="summary-amount text-expense" id="totalExpenseAmount">Rp 0</div>
+          <div class="summary-foot" id="expenseCountLabel">0 transaksi keluar (tanpa limit)</div>
+        </div>
+      </section>
+
+      <!-- Workspace Grid: Left = Form Input, Right = Riwayat & Dokumentasi -->
+      <section class="workspace-grid">
+        <!-- LEFT PANEL: FORM TRANSAKSI -->
+        <div class="panel form-panel">
+          <div class="type-tabs" role="tablist">
+            <button type="button" class="type-tab active-expense" id="tabExpense" data-type="Pengeluaran">
+              <i data-lucide="receipt"></i> Pengeluaran
+            </button>
+            <button type="button" class="type-tab" id="tabIncome" data-type="Pemasukan">
+              <i data-lucide="banknote"></i> Pemasukan
+            </button>
+          </div>
+
+          <form id="transactionForm" autocomplete="off">
+            <!-- Dokumentasi & Smart Scan Struk -->
+            <div class="form-group">
+              <div class="label-row">
+                <label id="photoSectionLabel">Foto Struk (Auto-Scan) / Dokumentasi</label>
+                <span class="badge-ai" id="ocrBadge">AI OCR Siap</span>
+              </div>
+
+              <div class="upload-zone" id="uploadZone">
+                <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden" />
+                <div id="uploadPlaceholder" class="upload-placeholder">
+                  <div class="upload-icon-wrap">
+                    <i data-lucide="camera"></i>
+                  </div>
+                  <div class="upload-text">
+                    <strong id="uploadTitle">Foto Struk atau Pilih Gambar</strong>
+                    <span id="uploadSub">Otomatis baca nominal & kategori, lalu simpan ke Google Drive</span>
+                  </div>
+                </div>
+
+                <!-- Preview Dokumentasi -->
+                <div id="photoPreviewWrap" class="photo-preview-wrap hidden">
+                  <img id="photoPreviewImg" src="" alt="Preview Dokumentasi" />
+                  <div class="photo-preview-actions">
+                    <button type="button" class="btn-mini" id="rescanBtn">
+                      <i data-lucide="scan-line"></i> Scan Ulang
+                    </button>
+                    <button type="button" class="btn-mini btn-danger" id="removePhotoBtn">
+                      <i data-lucide="trash-2"></i> Hapus Foto
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OCR Progress Indicator -->
+              <div id="ocrProgressBox" class="ocr-progress hidden">
+                <div class="ocr-progress-top">
+                  <span id="ocrStatusText">Membaca teks struk...</span>
+                  <span id="ocrPercentText">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div id="ocrProgressBar" class="progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nominal -->
+            <div class="form-group">
+              <label for="amountInput">Nominal (Rp)</label>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">Rp</span>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  id="amountInput"
+                  placeholder="0"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Kategori (Bisa dipilih & Adjust / Tambah Sendiri) -->
+            <div class="form-group">
+              <div class="label-row">
+                <label id="categoryLabel">Kategori Pengeluaran (Bisa Adjust Sendiri)</label>
+                <button type="button" class="link-btn" id="toggleNewCategoryBtn">
+                  + Kategori Baru
+                </button>
+              </div>
+
+              <div id="newCategoryRow" class="new-cat-row hidden">
+                <input type="text" id="newCategoryInput" placeholder="Nama kategori baru..." maxlength="28" />
+                <button type="button" class="btn-secondary" id="saveNewCategoryBtn">Tambah</button>
+              </div>
+
+              <div class="category-chips" id="categoryChips"></div>
+              <input type="hidden" id="selectedCategory" required />
+            </div>
+
+            <!-- Keterangan Detail -->
+            <div class="form-group">
+              <label for="descInput" id="descLabel">Keterangan (Makan di mana / beli apa)</label>
+              <input
+                type="text"
+                id="descInput"
+                placeholder="Contoh: Makan siang Soto Ayam Pak Budi / Bayar listrik"
+                required
+              />
+            </div>
+
+            <!-- Tanggal & Jam Transaksi -->
+            <div class="form-group">
+              <label for="dateTimeInput">Waktu Transaksi</label>
+              <input type="datetime-local" id="dateTimeInput" required />
+            </div>
+
+            <button type="submit" class="btn-submit expense-submit" id="submitBtn">
+              <i data-lucide="check-circle-2"></i>
+              <span id="submitBtnText">Simpan Pengeluaran</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- RIGHT PANEL: RIWAYAT & DOKUMENTASI VISUAL -->
+        <div class="panel history-panel">
+          <div class="history-header">
+            <div>
+              <h2>Riwayat & Dokumentasi Bulan Ini</h2>
+              <p class="history-sub">Tab Sheet: <strong class="active-sheet-name">2026-11</strong></p>
+            </div>
+            <button type="button" class="btn-secondary btn-sm" id="syncNowBtn" title="Sinkronkan ulang dengan Google Sheets">
+              <i data-lucide="refresh-cw"></i> Sync Sheet
+            </button>
+          </div>
+
+          <!-- Search & Filter -->
+          <div class="filter-bar">
+            <div class="search-box">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchInput" placeholder="Cari makan di mana, beli apa, atau sumber dana..." />
+            </div>
+            <div class="filter-pills">
+              <button type="button" class="filter-pill active" data-filter="ALL">Semua</button>
+              <button type="button" class="filter-pill" data-filter="Pemasukan">Pemasukan</button>
+              <button type="button" class="filter-pill" data-filter="Pengeluaran">Pengeluaran</button>
+              <button type="button" class="filter-pill" data-filter="PHOTO">Ada Foto</button>
+            </div>
+          </div>
+
+          <!-- Category Breakdown Bar -->
+          <div id="breakdownCard" class="breakdown-card hidden">
+            <div class="breakdown-top">
+              <span>Proporsi Pengeluaran Bulan Ini</span>
+              <span id="topCategoryLabel">-</span>
+            </div>
+            <div class="breakdown-bar" id="breakdownBar"></div>
+          </div>
+
+          <!-- Transaction List -->
+          <div id="transactionList" class="transaction-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== SETTINGS MODAL ==================== -->
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i data-lucide="sliders-horizontal"></i> Pengaturan Database & Keamanan</h3>
+        <button type="button" class="icon-btn-sm" id="closeSettingsBtn"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-callout">
+          <i data-lucide="hard-drive"></i>
+          <div>
+            <strong>Integrasi Google Sheets & Google Drive Otomatis</strong>
+            <p>Tempel URL Web App dari <code>Code.gs</code> di bawah ini. Setiap foto struk/dokumentasi otomatis tersimpan ke folder Google Drive Anda, dan link-nya masuk ke Sheet bulanan.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="appsScriptUrlInput">URL Google Apps Script Web App</label>
+          <input
+            type="url"
+            id="appsScriptUrlInput"
+            placeholder="https://script.google.com/macros/s/XXXXX/exec"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="newPinInput">Ubah PIN Keamanan (6 Digit Angka)</label>
+          <input
+            type="password"
+            inputmode="numeric"
+            maxlength="6"
+            id="newPinInput"
+            placeholder="Kosongkan jika tidak ingin mengubah PIN"
+          />
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-secondary" id="exportCsvBtn">
+            <i data-lucide="download"></i> Export CSV Bulan Ini
+          </button>
+          <button type="button" class="btn-secondary btn-danger-outline" id="resetDemoBtn">
+            <i data-lucide="rotate-ccw"></i> Kosongkan Data Lokal
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-submit" id="saveSettingsBtn">Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LIGHTBOX DOKUMENTASI MODAL ==================== -->
+  <div id="lightboxModal" class="modal-backdrop hidden">
+    <div class="lightbox-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="lightboxTitle">Dokumentasi Transaksi</h3>
+          <p id="lightboxMeta" class="lightbox-meta"></p>
+        </div>
+        <button type="button" class="icon-btn-sm" id="closeLightboxBtn"><i data-lucide="x"></i></button>
+      </div>
+      <div class="lightbox-body">
+        <img id="lightboxImg" src="" alt="Bukti Dokumentasi" />
+      </div>
+      <div class="lightbox-footer">
+        <span id="lightboxAmount" class="lightbox-amount"></span>
+        <a id="lightboxDriveLink" href="#" target="_blank" rel="noopener" class="btn-secondary btn-sm hidden">
+          <i data-lucide="external-link"></i> Buka Asli di Google Drive
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
