@@ -246,18 +246,25 @@ function bindEvents() {
 
   document.getElementById('saveNewCategoryBtn').addEventListener('click', addCustomCategory);
 
-  const uploadZone = document.getElementById('uploadZone');
-  const photoInput = document.getElementById('photoInput');
-  uploadZone.addEventListener('click', (e) => {
-    if (e.target.closest('button')) return;
-    photoInput.click();
+  const cameraInput = document.getElementById('cameraInput');
+  const galleryInput = document.getElementById('galleryInput');
+
+  document.getElementById('openCameraBtn').addEventListener('click', () => {
+    cameraInput.click();
   });
 
-  photoInput.addEventListener('change', async (e) => {
+  document.getElementById('openGalleryBtn').addEventListener('click', () => {
+    galleryInput.click();
+  });
+
+  const onFilePicked = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     await handleImageSelected(file);
-  });
+  };
+
+  cameraInput.addEventListener('change', onFilePicked);
+  galleryInput.addEventListener('change', onFilePicked);
 
   document.getElementById('rescanBtn').addEventListener('click', async () => {
     if (state.currentPhotoBase64) {
@@ -341,7 +348,6 @@ function setTxType(type) {
     submitBtn.className = 'btn-submit expense-submit';
     document.getElementById('submitBtnText').textContent = 'Simpan Pengeluaran';
     document.getElementById('photoSectionLabel').textContent = 'Foto Struk (Auto-Scan) / Dokumentasi Belanja';
-    document.getElementById('uploadTitle').textContent = 'Foto Struk atau Makanan/Barang';
     document.getElementById('uploadSub').textContent = 'Otomatis baca nominal & kategori dari struk, tersimpan ke Drive';
     document.getElementById('ocrBadge').classList.remove('hidden');
     document.getElementById('categoryLabel').textContent = 'Kategori Pengeluaran (Bisa Adjust Sendiri)';
@@ -353,7 +359,6 @@ function setTxType(type) {
     submitBtn.className = 'btn-submit income-submit';
     document.getElementById('submitBtnText').textContent = 'Simpan Pemasukan';
     document.getElementById('photoSectionLabel').textContent = 'Dokumentasi Pemasukan (Bukti Transfer / Nota)';
-    document.getElementById('uploadTitle').textContent = 'Unggah Bukti Transfer / Sumber Dana';
     document.getElementById('uploadSub').textContent = 'Foto dokumentasi otomatis masuk ke folder Google Drive';
     document.getElementById('ocrBadge').classList.add('hidden');
     document.getElementById('categoryLabel').textContent = 'Kategori Uang Masuk (Bisa Adjust Sendiri)';
@@ -431,7 +436,10 @@ async function handleImageSelected(file) {
 function clearPhotoPreview() {
   state.currentPhotoBase64 = '';
   state.currentPhotoName = '';
-  document.getElementById('photoInput').value = '';
+  const cam = document.getElementById('cameraInput');
+  const gal = document.getElementById('galleryInput');
+  if (cam) cam.value = '';
+  if (gal) gal.value = '';
   document.getElementById('photoPreviewWrap').classList.add('hidden');
   document.getElementById('uploadPlaceholder').classList.remove('hidden');
   document.getElementById('ocrProgressBox').classList.add('hidden');
