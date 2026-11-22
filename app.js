@@ -704,6 +704,21 @@ async function fetchMonthFromGoogleSheet(monthStr) {
     updateSyncBadge(false);
   }
 }
+async function deleteTransactionFromGoogleSheet(id, month) {
+  try {
+    const res = await fetch(state.scriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'delete', id, month })
+    });
+    const data = await res.json();
+    if (data && data.status === 'success') {
+      showToast(`Baris di tab Sheet "${month}" ikut terhapus!`);
+    }
+  } catch (err) {
+    showToast('Dihapus di aplikasi (Gagal menghapus baris di Google Sheets).');
+  }
+}
 
 function updateSyncBadge(connected = Boolean(state.scriptUrl)) {
   const badge = document.getElementById('syncStatusBadge');
@@ -859,19 +874,48 @@ function renderTransactions() {
   container.querySelectorAll('.tx-thumb').forEach(img => {
     img.addEventListener('click', () => openLightbox(img.dataset.txid));
   });
+container.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      // Warning ke-1 (di halaman): tombol berubah menjadi "Yakin Hapus?" selama 3 detik
+      if (btn.dataset.confirming !== 'true') {
+        btn.dataset.confirming = 'true';
+        btn.style.color = 'var(--expense)';
+        btn.style.fontWeight = '700';
+        btn.textContent = 'Yakin Hapus?';
 
-  container.querySelectorAll('[data-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
+        setTimeout(() => {
+          if (document.body.contains(btn)) {
+            btn.dataset.confirming = 'false';
+            btn.style.color = '';
+            btn.style.fontWeight = '';
+            btn.innerHTML = `<i data-lucide="trash-2" style="width:12px;height:12px;"></i> Hapus`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+          }
+        }, 3000);
+        return;
+      }
+
+      // Warning ke-2 (pop-up): konfirmasi akhir sebelum menghapus permanen
       const id = btn.dataset.del;
+      const targetTx = state.transactions.find(t => t.id === id);
+      if (!targetTx) return;
+
+      const yakinHapus = confirm(
+        `Hapus permanen transaksi "${targetTx.description}" (${formatRupiah(targetTx.amount)})?\n\nBaris data di Google Sheets juga akan ikut terhapus.`
+      );
+      if (!yakinHapus) return;
+
+      // Eksekusi hapus di aplikasi & Google Sheets
       state.transactions = state.transactions.filter(t => t.id !== id);
       persistTransactions();
       renderAll();
       showToast('Transaksi dihapus.');
+
+      if (state.scriptUrl) {
+        await deleteTransactionFromGoogleSheet(targetTx.id, targetTx.month);
+      }
     });
   });
-
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
 
 // ==================== SETTINGS, LIGHTBOX & EXPORT ====================
 function openSettingsModal() {
