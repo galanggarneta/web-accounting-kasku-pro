@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#090d16" />
   <title>KasKu Pro — Pencatat Keuangan & Struk Otomatis</title>
   <link rel="icon" type="image/svg+xml" href="logo-kasku.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-kasku-192.png" />
@@ -17,9 +17,16 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Ambient Liquid Orbs Background -->
+  <div class="liquid-bg" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
   <!-- ==================== PIN LOCK SCREEN ==================== -->
   <div id="pinOverlay" class="pin-overlay">
-    <div class="pin-card" id="pinCard">
+    <div class="pin-card glass-surface" id="pinCard">
       <div class="pin-logo">
         <i data-lucide="shield-check"></i>
       </div>
@@ -55,47 +62,22 @@
 
   <!-- ==================== MAIN APP SHELL ==================== -->
   <div id="appShell" class="app-shell hidden">
-    <!-- Top Header -->
+    <!-- Minimal Liquid Glass Top Header -->
     <header class="topbar">
-      <div class="topbar-inner">
+      <div class="topbar-inner glass-surface">
         <div class="brand">
           <div class="brand-icon">
             <i data-lucide="wallet"></i>
           </div>
           <div>
             <span class="brand-name">KasKu<span class="brand-accent">Pro</span></span>
-            <span class="brand-tag" id="syncStatusBadge">
-              <span class="status-dot"></span> Mode Lokal
-            </span>
+            <span class="brand-sub-label">Liquid Ledger</span>
           </div>
         </div>
 
-        <!-- Month Switcher (Auto-creates new sheet per month) -->
-        <div class="month-switcher" title="Setiap bulan otomatis membuka tab Sheet baru">
-          <button type="button" class="icon-btn-sm" id="prevMonthBtn" aria-label="Bulan Sebelumnya">
-            <i data-lucide="chevron-left"></i>
-          </button>
-          <div class="month-display">
-            <i data-lucide="calendar"></i>
-            <input type="month" id="monthPicker" aria-label="Pilih Bulan Sheet" />
-          </div>
-          <button type="button" class="icon-btn-sm" id="nextMonthBtn" aria-label="Bulan Berikutnya">
-            <i data-lucide="chevron-right"></i>
-          </button>
-        </div>
-
-        <!-- Header Actions -->
-        <div class="header-actions">
-          <button type="button" class="icon-btn" id="themeToggleBtn" title="Ganti Tema Gelap / Terang">
-            <i data-lucide="sun" id="themeIcon"></i>
-          </button>
-          <button type="button" class="icon-btn" id="settingsBtn" title="Pengaturan Sheets, Drive & PIN">
-            <i data-lucide="settings"></i>
-          </button>
-          <button type="button" class="icon-btn" id="lockAppBtn" title="Kunci Aplikasi (PIN)">
-            <i data-lucide="lock"></i>
-          </button>
-        </div>
+        <span class="brand-tag" id="syncStatusBadge">
+          <span class="status-dot"></span> Mode Lokal
+        </span>
       </div>
     </header>
 
@@ -103,7 +85,7 @@
     <main class="main-container">
       <!-- Real-Time Summary Cards -->
       <section class="summary-grid" aria-label="Ringkasan Saldo Bulan Ini">
-        <div class="summary-card card-balance">
+        <div class="summary-card card-balance glass-surface">
           <div class="summary-header">
             <span class="summary-label">Sisa Saldo (<span class="active-sheet-name">2026-11</span>)</span>
             <span class="live-pill">LIVE UPDATE</span>
@@ -114,7 +96,7 @@
           </div>
         </div>
 
-        <div class="summary-card card-income">
+        <div class="summary-card card-income glass-surface">
           <div class="summary-header">
             <span class="summary-label">Total Pemasukan</span>
             <div class="summary-icon income-bg"><i data-lucide="arrow-down-left"></i></div>
@@ -123,7 +105,7 @@
           <div class="summary-foot" id="incomeCountLabel">0 transaksi masuk</div>
         </div>
 
-        <div class="summary-card card-expense">
+        <div class="summary-card card-expense glass-surface">
           <div class="summary-header">
             <span class="summary-label">Total Pengeluaran</span>
             <div class="summary-icon expense-bg"><i data-lucide="arrow-up-right"></i></div>
@@ -136,7 +118,7 @@
       <!-- Workspace Grid: Left = Form Input, Right = Riwayat & Dokumentasi -->
       <section class="workspace-grid">
         <!-- LEFT PANEL: FORM TRANSAKSI -->
-        <div class="panel form-panel">
+        <div class="panel form-panel glass-surface">
           <div class="type-tabs" role="tablist">
             <button type="button" class="type-tab active-expense" id="tabExpense" data-type="Pengeluaran">
               <i data-lucide="receipt"></i> Pengeluaran
@@ -155,15 +137,21 @@
               </div>
 
               <div class="upload-zone" id="uploadZone">
-                <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden" />
-                <div id="uploadPlaceholder" class="upload-placeholder">
-                  <div class="upload-icon-wrap">
-                    <i data-lucide="camera"></i>
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" />
+                <input type="file" id="galleryInput" accept="image/*" class="hidden" />
+
+                <div id="uploadPlaceholder" class="upload-placeholder-dual">
+                  <div class="upload-dual-buttons">
+                    <button type="button" class="btn-upload-choice" id="openCameraBtn">
+                      <i data-lucide="camera"></i>
+                      <span>Kamera</span>
+                    </button>
+                    <button type="button" class="btn-upload-choice" id="openGalleryBtn">
+                      <i data-lucide="image"></i>
+                      <span>Galeri</span>
+                    </button>
                   </div>
-                  <div class="upload-text">
-                    <strong id="uploadTitle">Foto Struk atau Pilih Gambar</strong>
-                    <span id="uploadSub">Otomatis baca nominal & kategori, lalu simpan ke Google Drive</span>
-                  </div>
+                  <span class="upload-dual-hint" id="uploadSub">Otomatis baca nominal & kategori, lalu simpan ke Google Drive</span>
                 </div>
 
                 <!-- Preview Dokumentasi -->
@@ -250,7 +238,7 @@
         </div>
 
         <!-- RIGHT PANEL: RIWAYAT & DOKUMENTASI VISUAL -->
-        <div class="panel history-panel">
+        <div class="panel history-panel glass-surface">
           <div class="history-header">
             <div>
               <h2>Riwayat & Dokumentasi Bulan Ini</h2>
@@ -289,14 +277,51 @@
         </div>
       </section>
     </main>
+
+    <!-- ==================== FLOATING LIQUID GLASS BOTTOM DOCK ==================== -->
+    <nav class="liquid-dock-wrap" aria-label="Kontrol Bulan, Tema, Pengaturan, dan Kunci">
+      <div class="liquid-dock glass-surface">
+        <!-- Month Switcher -->
+        <div class="month-switcher" title="Pilih Bulan Sheet">
+          <button type="button" class="dock-btn-sm" id="prevMonthBtn" aria-label="Bulan Sebelumnya">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          <div class="month-display">
+            <i data-lucide="calendar"></i>
+            <input type="month" id="monthPicker" aria-label="Pilih Bulan Sheet" />
+          </div>
+          <button type="button" class="dock-btn-sm" id="nextMonthBtn" aria-label="Bulan Berikutnya">
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>
+
+        <span class="dock-divider" aria-hidden="true"></span>
+
+        <!-- Theme, Settings & Lock Controls -->
+        <div class="dock-actions">
+          <button type="button" class="dock-btn" id="themeToggleBtn" title="Ganti Tema Gelap / Terang">
+            <i data-lucide="sun" id="themeIcon"></i>
+            <span class="dock-label">Tema</span>
+          </button>
+          <button type="button" class="dock-btn" id="settingsBtn" title="Pengaturan Sheets, Drive & PIN">
+            <i data-lucide="settings"></i>
+            <span class="dock-label">Setting</span>
+          </button>
+          <button type="button" class="dock-btn dock-btn-lock" id="lockAppBtn" title="Kunci Aplikasi (PIN)">
+            <i data-lucide="lock"></i>
+            <span class="dock-label">Kunci</span>
+          </button>
+        </div>
+      </div>
+    </nav>
   </div>
 
   <!-- ==================== SETTINGS MODAL ==================== -->
   <div id="settingsModal" class="modal-backdrop hidden">
-    <div class="modal-card">
+    <div class="modal-card glass-surface">
       <div class="modal-header">
         <h3><i data-lucide="sliders-horizontal"></i> Pengaturan Database & Keamanan</h3>
-        <button type="button" class="icon-btn-sm" id="closeSettingsBtn"><i data-lucide="x"></i></button>
+        <button type="button" class="dock-btn-sm" id="closeSettingsBtn"><i data-lucide="x"></i></button>
       </div>
 
       <div class="modal-body">
@@ -304,7 +329,7 @@
           <i data-lucide="hard-drive"></i>
           <div>
             <strong>Integrasi Google Sheets & Google Drive Otomatis</strong>
-            <p>Tempel URL Web App dari <code>Code.gs</code> di bawah ini. Setiap foto struk/dokumentasi otomatis tersimpan ke folder Google Drive Anda, dan link-nya masuk ke Sheet bulanan.</p>
+            <p>Tempel URL Web App dari <code>Kode.gs</code> di bawah ini. Setiap foto struk/dokumentasi otomatis tersimpan ke folder Google Drive Anda, dan link-nya masuk ke Sheet bulanan.</p>
           </div>
         </div>
 
@@ -346,13 +371,13 @@
 
   <!-- ==================== LIGHTBOX DOKUMENTASI MODAL ==================== -->
   <div id="lightboxModal" class="modal-backdrop hidden">
-    <div class="lightbox-card">
+    <div class="lightbox-card glass-surface">
       <div class="modal-header">
         <div>
           <h3 id="lightboxTitle">Dokumentasi Transaksi</h3>
           <p id="lightboxMeta" class="lightbox-meta"></p>
         </div>
-        <button type="button" class="icon-btn-sm" id="closeLightboxBtn"><i data-lucide="x"></i></button>
+        <button type="button" class="dock-btn-sm" id="closeLightboxBtn"><i data-lucide="x"></i></button>
       </div>
       <div class="lightbox-body">
         <img id="lightboxImg" src="" alt="Bukti Dokumentasi" />
@@ -367,7 +392,7 @@
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast glass-surface hidden"></div>
 
   <script src="app.js"></script>
 </body>
